@@ -7,7 +7,6 @@ void handler_updateQueue(Matrix* p_m, OrderQueue* p_q, Elevator* p_e)
     if (p_e->current_floor == N_FLOORS - 1) p_e->direction = 1;
     if (p_e->current_floor == 0) p_e->direction = 0;
 
-
     
     // Check if there's a request at the current floor AND the elevator is stopped
     if (p_e->motor_dir == DIRN_STOP && 
@@ -15,11 +14,9 @@ void handler_updateQueue(Matrix* p_m, OrderQueue* p_q, Elevator* p_e)
         p_m->list[p_e->current_floor].hall_up == 1 || 
         p_m->list[p_e->current_floor].hall_down == 1))
     {
-        QueueEntry e = {p_e->current_floor, BUTTON_CAB};
-        p_q->queue[0] = e;
+        p_q->queue[0] = (QueueEntry){p_e->current_floor, BUTTON_CAB};
         return;
     }
-
 
     if (matrix_isEmpty(p_m)) {
         p_e->direction = 2; 
@@ -109,11 +106,14 @@ void handler_run_matrix()
     int timer = 0;
     while (handler.go)
     {
+        //Stop button
         if(elevio_stopButton())
         {
-            if (elevio_floorSensor() != -1) {
-                if (elevator.door_open == false){
-                elev_openDoor(&elevator);
+            if (elevio_floorSensor() != -1) 
+            {
+                if (elevator.door_open == false)
+                {
+                    elev_openDoor(&elevator);
                 }
                 timer = 1000;
             } 
@@ -123,18 +123,21 @@ void handler_run_matrix()
             matrix_clearMatrix(&m);
             q.queue[0] = (QueueEntry){-1, BUTTON_CAB};
             handler_resetLamps();
-
-        } else {
+        } 
+        else 
+        {
             elevio_stopLamp(0);
         }
-        
+
+        //Update things
         handler_updateMatrix(&m);
         handler_updateQueue(&m, &q, &elevator);
         handler_printElevatorStates(&elevator);
         matrix_printMatrix(&m);
         order_printQueue(&q);
 
-        //Dersom ikke tom kø
+
+        //Move function
         if ((q.queue[0].floor != -1) && (timer <= 0))
         {
             elev_moveTo(&elevator, q.queue[0].floor);
@@ -143,6 +146,7 @@ void handler_run_matrix()
         {
             elev_setMotorDir(&elevator, DIRN_STOP);  
         }
+
         
         //Elevator arrived
         if (elevator.has_arrived)
@@ -154,6 +158,7 @@ void handler_run_matrix()
             timer += DOOR_OPEN_TIME_MS;
             elevator.has_arrived = false;
         } 
+
         
         //Door is ready to be closed
         if (timer <= 0 && elevator.door_open == true) 
@@ -163,7 +168,13 @@ void handler_run_matrix()
                 timer += DOOR_OBS_TIME_MS;
                 printf("\t\t\t\tdoor OBS!\n\n");
             }
-            else
+            else if (matrix_isCallFromFloor(&m, elevator.current_floor))
+            {
+                timer = DOOR_OPEN_TIME_MS;
+                order_removeFromQueue(&q, elevator.current_floor);
+                matrix_clearFloor(&m, elevator.current_floor);
+            }                
+            else 
             {
                 elev_closeDoor(&elevator);
                 timer = 0;

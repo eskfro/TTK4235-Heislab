@@ -36,13 +36,11 @@ void matrix_printMatrix(Matrix* m)
 
 Matrix matrix_createMatrix() 
 {
-    FloorType f0 = {0, 0, 0};
-    FloorType f1 = {0, 0, 0};
-    FloorType f2 = {0, 0, 0};
     FloorType f3 = {0, 0, 0};
-
-    Matrix m = {f0, f1, f2, f3};
-    return m;
+    FloorType f2 = {0, 0, 0};
+    FloorType f1 = {0, 0, 0};
+    FloorType f0 = {0, 0, 0};
+    return (Matrix){f0, f1, f2, f3};
 }
 
 
@@ -66,7 +64,6 @@ void matrix_clearFloor(Matrix* m, int floor)
 }
 
 
-
 int matrix_isEmpty(Matrix *m)
 {
     for (int i = 0; i < N_FLOORS; i++)
@@ -78,6 +75,7 @@ int matrix_isEmpty(Matrix *m)
     }
     return 1;
 }
+
 
 int matrix_isCallFromFloor(Matrix* m, int floor) 
 {

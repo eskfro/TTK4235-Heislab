@@ -50,6 +50,7 @@ void elev_moveTo(Elevator *p_elevator, int floor)
         
     }
 
+    //Update floor indicator and current floor when moving
     if (floor_sensor != -1) 
     {
         if (floor_sensor != p_elevator->current_floor) p_elevator->current_floor = floor_sensor;
