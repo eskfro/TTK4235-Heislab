@@ -19,7 +19,7 @@ typedef struct {
 } Handler;
 
 
-void handler_run_matrix();
+void handler_run();
 void handler_updateMatrix(Matrix* m);
 void handler_resetLamps();
 void handler_updateQueue(Matrix* p_m, OrderQueue* p_q, Elevator* p_e);

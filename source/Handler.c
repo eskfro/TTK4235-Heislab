@@ -1,5 +1,103 @@
 #include "../include/Handler.h"
 
+//Main function
+void handler_run()
+{
+    //Initialising 
+    elevio_init();
+    elevio_motorDirection(DIRN_STOP);
+    Handler handler = {true};
+    OrderQueue q = order_createQueue();
+    Elevator elevator = elev_createElevator();
+    Matrix m = matrix_createMatrix();
+    elevio_stopLamp(0);
+    elevio_doorOpenLamp(0);
+    handler_resetLamps();
+    elev_initElevator(&elevator);
+    int timer = 0;
+    
+    while (handler.go)
+    {
+        //Stop button
+        if(elevio_stopButton())
+        {
+            if (elevio_floorSensor() != -1) 
+            {
+                if (elevator.door_open == false)
+                {
+                    elev_openDoor(&elevator);
+                }
+                timer = DOOR_OPEN_TIME_MS;
+            } 
+            elev_emergencyStop(&elevator);
+            elevio_stopLamp(1);
+
+            matrix_clearMatrix(&m);
+            q.queue[0] = (QueueEntry){-1, BUTTON_CAB};
+            handler_resetLamps();
+        } 
+        else 
+        {
+            elevio_stopLamp(0);
+        }
+
+        //Update things
+        handler_updateMatrix(&m);
+        handler_updateQueue(&m, &q, &elevator);
+        handler_printElevatorStates(&elevator);
+        matrix_printMatrix(&m);
+        order_printQueue(&q);
+
+
+        //Move function
+        if ((q.queue[0].floor != -1) && (timer <= 0))
+        {
+            elev_moveTo(&elevator, q.queue[0].floor);
+        } 
+        else if (elevator.motor_dir != DIRN_STOP)
+        {
+            elev_setMotorDir(&elevator, DIRN_STOP);  
+        }
+
+        
+        //Elevator arrived
+        if (elevator.has_arrived)
+        {   
+            handler_printArrived(elevator.current_floor);
+            order_removeFromQueue(&q, elevator.current_floor);
+            matrix_clearFloor(&m, elevator.current_floor);
+            if (elevator.door_open == false) elev_openDoor(&elevator);
+            timer += DOOR_OPEN_TIME_MS;
+            elevator.has_arrived = false;
+        } 
+
+        
+        //Door is ready to be closed
+        if (timer <= 0 && elevator.door_open == true) 
+        {
+            if (elevio_obstruction()) 
+            {
+                timer += DOOR_OBS_TIME_MS;
+                printf("\t\t\t\tdoor OBS!\n\n");
+            }
+            else if (matrix_isCallFromFloor(&m, elevator.current_floor))
+            {
+                timer = DOOR_OPEN_TIME_MS;
+                order_removeFromQueue(&q, elevator.current_floor);
+                matrix_clearFloor(&m, elevator.current_floor);
+            }                
+            else 
+            {
+                elev_closeDoor(&elevator);
+                timer = 0;
+            } 
+        }
+
+        //Decrement timer
+        if (timer > 0) timer -= LOOP_DELAY_MS;
+        nanosleep(&(struct timespec){0, LOOP_DELAY_MS*1000*1000}, NULL);        
+    }
+}
 
 
 void handler_updateQueue(Matrix* p_m, OrderQueue* p_q, Elevator* p_e)
@@ -82,108 +180,12 @@ void handler_updateQueue(Matrix* p_m, OrderQueue* p_q, Elevator* p_e)
                 p_e->direction = 0;
                 return;
             }
+            //Down case
             if (((floor - offset) >= 0) && matrix_isCallFromFloor(p_m, floor - offset)) {
                 p_e->direction = 1;
                 return;
             }
         }
-    }
-}
-
-void handler_run_matrix()
-{
-    elevio_init();
-    elevio_motorDirection(DIRN_STOP);
-    Handler handler = {true};
-    OrderQueue q = order_createQueue();
-    Elevator elevator = elev_createElevator();
-    Matrix m = matrix_createMatrix();
-    elevio_stopLamp(0);
-    elevio_doorOpenLamp(0);
-    handler_resetLamps();
-    elev_initElevator(&elevator);
-
-    int timer = 0;
-    while (handler.go)
-    {
-        //Stop button
-        if(elevio_stopButton())
-        {
-            if (elevio_floorSensor() != -1) 
-            {
-                if (elevator.door_open == false)
-                {
-                    elev_openDoor(&elevator);
-                }
-                timer = 1000;
-            } 
-            elev_emergencyStop(&elevator);
-            elevio_stopLamp(1);
-
-            matrix_clearMatrix(&m);
-            q.queue[0] = (QueueEntry){-1, BUTTON_CAB};
-            handler_resetLamps();
-        } 
-        else 
-        {
-            elevio_stopLamp(0);
-        }
-
-        //Update things
-        handler_updateMatrix(&m);
-        handler_updateQueue(&m, &q, &elevator);
-        handler_printElevatorStates(&elevator);
-        matrix_printMatrix(&m);
-        order_printQueue(&q);
-
-
-        //Move function
-        if ((q.queue[0].floor != -1) && (timer <= 0))
-        {
-            elev_moveTo(&elevator, q.queue[0].floor);
-        } 
-        else if (elevator.motor_dir != DIRN_STOP)
-        {
-            elev_setMotorDir(&elevator, DIRN_STOP);  
-        }
-
-        
-        //Elevator arrived
-        if (elevator.has_arrived)
-        {   
-            handler_printArrived(elevator.current_floor);
-            order_removeFromQueue(&q, elevator.current_floor);
-            matrix_clearFloor(&m, elevator.current_floor);
-            elev_openDoor(&elevator);
-            timer += DOOR_OPEN_TIME_MS;
-            elevator.has_arrived = false;
-        } 
-
-        
-        //Door is ready to be closed
-        if (timer <= 0 && elevator.door_open == true) 
-        {
-            if (elevio_obstruction()) 
-            {
-                timer += DOOR_OBS_TIME_MS;
-                printf("\t\t\t\tdoor OBS!\n\n");
-            }
-            else if (matrix_isCallFromFloor(&m, elevator.current_floor))
-            {
-                timer = DOOR_OPEN_TIME_MS;
-                order_removeFromQueue(&q, elevator.current_floor);
-                matrix_clearFloor(&m, elevator.current_floor);
-            }                
-            else 
-            {
-                elev_closeDoor(&elevator);
-                timer = 0;
-            } 
-        }
-
-        //Decrement timer
-        if (timer > 0) timer -= LOOP_DELAY_MS;
-        nanosleep(&(struct timespec){0, LOOP_DELAY_MS*1000*1000}, NULL);        
     }
 }
 

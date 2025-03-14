@@ -89,8 +89,8 @@ void elev_openDoor(Elevator *p_elevator)
     {
         elevio_doorOpenLamp(1);
         p_elevator->door_open = true;
+        printf("\t\t\t\tdoor OPEN\n\n");
     }
-    printf("\t\t\t\tdoor OPEN\n\n");
 }
 
 

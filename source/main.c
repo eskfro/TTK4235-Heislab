@@ -8,7 +8,7 @@
 
 int main(){
 
-    handler_run_matrix();
-
+    handler_run();
+    
     return 0;
 }

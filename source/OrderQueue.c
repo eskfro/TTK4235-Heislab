@@ -2,10 +2,7 @@
 
 void order_clearQueue(OrderQueue* p_queue)
 {
-    for (int i = 0; i < QUEUESIZE; i++)
-    {
-        p_queue->queue[i].floor = -1;   
-    }
+    for (int i = 0; i < QUEUESIZE; i++) p_queue->queue[i].floor = -1;   
 }
 
 
@@ -15,19 +12,18 @@ void order_removeFromQueue(OrderQueue* p_queue, int floor)
         elevio_buttonLamp(floor, i, 0);
     }
 
-    // Iterate over the queue and shift elements left when the floor is found
     for (int i = 0; i < QUEUESIZE - 1; i++) {
         if (p_queue->queue[i].floor == floor) {
-            // Shift the remaining elements to the left
+            // Shift left
             for (int j = i; j < QUEUESIZE - 1; j++) {
                 p_queue->queue[j] = p_queue->queue[j + 1];
             }
-            // Mark the last position as empty
             p_queue->queue[QUEUESIZE - 1].floor = -1;
-            break; // Stop once the first match is removed
+            break;
         }
     }
 }
+
 
 void order_printQueue(OrderQueue *p_queue)
 {

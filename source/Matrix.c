@@ -68,10 +68,7 @@ int matrix_isEmpty(Matrix *m)
 {
     for (int i = 0; i < N_FLOORS; i++)
     {
-        if (m->list[i].cab == 1 || m->list[i].hall_up == 1 || m->list[i].hall_down == 1)
-        {
-            return 0;
-        }
+        if (m->list[i].cab == 1 || m->list[i].hall_up == 1 || m->list[i].hall_down == 1) return 0;    
     }
     return 1;
 }
